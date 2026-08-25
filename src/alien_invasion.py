@@ -11,6 +11,10 @@ from ship import Ship
 class AlienInvasion:
     """Gerencia o jogo e seus comportamentos."""
 
+    """Os métodos da classe devem ter _ por convenção para indicar que são métodos privados, ou seja, não devem ser acessados diretamente fora da classe."""
+    """Os métodos são dependentes da classe, ou seja, eles precisam de uma instância da classe para serem chamados."""
+    """Funções são independentes da classe, ou seja, elas podem ser chamadas sem a necessidade de uma instância da classe."""
+    
     def __init__(self):
         """Construtor da classe que inicializa o jogo e cria os recursos básicos"""
         pygame.init()
@@ -34,6 +38,66 @@ class AlienInvasion:
         self.aliens = (
             pygame.sprite.Group()
         )  # Cria um grupo para armazenar os alienígenas presentes no jogo
+
+    def _check_events(self):
+        """Responde a eventos de pressionamento de teclas e mouse (fechamento da janela)"""
+        for event in pygame.event.get():
+         if event.type == pygame.QUIT:
+            sys.exit()
+         elif event.type == pygame.KEYDOWN:
+            self._handle_keydown(event)
+         elif event.type == pygame.KEYUP:
+            self._handle_keyup(event)
+
+    def _handle_keydown(self, event: pygame.event.Event) -> None:
+        """Responde a eventos de teclas."""
+        if event.key == pygame.K_RIGHT:
+            self.ship.moving_right = True
+        elif event.key == pygame.K_LEFT:
+            self.ship.moving_left = True
+        elif event.key == pygame.K_SPACE:
+            self._fire_bullet()
+
+    def _handle_keyup(self, event: pygame.event.Event) -> None:
+        """Responde a eventos de soltura de teclas."""
+        if event.key == pygame.K_RIGHT:
+            self.ship.moving_right = False
+        elif event.key == pygame.K_LEFT:
+            self.ship.moving_left = False
+
+    def _fire_bullet(self) -> None:
+        """Dispara um projétil se o limite de projéteis ainda não tiver sido alcançado."""
+        if len(self.bullets) < self.settings.bullet_allowed:
+            new_bullet = Bullet(self.screen, self.settings, self.ship)
+            self.bullets.add(new_bullet)
+
+    def _update_bullets(self) -> None:
+        """Atualiza a posição dos projéteis e se livra dos projéteis antigos."""
+        self.bullets.update()
+        self._remove_offscreen_bullets()
+        self._check_bullet_alien_collisions()
+
+    def _remove_offscreen_bullets(self) -> None:
+        """Remove os projéteis que desapareceram da tela."""
+        for bullet in self.bullets.copy():
+            if bullet.rect.bottom <= 0:
+                self.bullets.remove(bullet)
+
+    def _check_bullet_alien_collisions(self) -> None:
+        """Verifica colisões entre projéteis e alienígenas."""
+        pygame.sprite.groupcollide(self.bullets, self.aliens, True, True)
+
+    def _update_aliens(self) -> None:
+        """Verifica se a frota de alienígenas está em uma borda, então atualiza as posições de todos os alienígenas na frota."""
+        self._check_fleet_edges()
+        self.aliens.update()
+
+    def _check_fleet_edges(self) -> None:
+        """Responde apropriadamente se algum alienígena tiver alcançado uma borda."""
+        for alien in self.aliens.sprites():
+            if alien.check_edges():
+                self._change_fleet_direction()
+                break
 
     def create_fleet(self):
         """Cria uma frota de alienígenas."""
@@ -167,8 +231,7 @@ class AlienInvasion:
                     "A nave foi atingida!"
                 )  # Imprime uma mensagem no console indicando que a nave foi atingida
                 sys.exit()  # Encerra o jogo
-
-
+                
 if __name__ == "__main__":
     alien_invasion = AlienInvasion()
     alien_invasion.run_game()
