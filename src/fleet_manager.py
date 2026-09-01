@@ -4,10 +4,11 @@ from alien import Alien
 
 class FleetManager:
     """Classe responsável pelos métodos de criar e gerenciar a frota de alienígenas."""
-    def __init__(self, screen, settings, ship) -> None:
+    def __init__(self, screen, settings, ship, alien_class=Alien) -> None:
         self.screen = screen
         self.settings = settings
         self.ship = ship
+        self.alien_class = alien_class
         self.aliens = pygame.sprite.Group()
 
     def _update_aliens(self) -> None:
@@ -21,12 +22,23 @@ class FleetManager:
             if alien.check_edges():
                 self._change_fleet_direction()
                 break
-    
+
+    def _create_alien(self, alien_number: int, row_number: int, alien_width: int, alien_height: int) -> None:
+        """Cria um alienígena e o posiciona na tela."""
+        alien = self.alien_class(self.screen, self.settings)
+        alien_width = alien.rect.width
+        alien.x = alien_width + 2 * alien_width * alien_number
+        alien.rect.x = alien.x
+        alien_height = alien.rect.height
+        alien.y = alien_height + 2 * alien_height * row_number
+        alien.rect.y = alien.y
+        self.aliens.add(alien)
+
     def create_fleet(self):
         """Cria uma frota de alienígenas."""
         # Cria um alienígena e calcula o número de alienígenas em uma linha
         # O espaçamento entre os alienígenas é igual a um alienígena
-        alien = Alien(self.screen, self.settings)
+        alien = self.alien_class(self.screen, self.settings)
         alien_width = alien.rect.width
         alien_height = alien.rect.height
         available_space_x = self.settings.screen_width - (2 * alien_width)
@@ -41,12 +53,8 @@ class FleetManager:
             # Cria a primeira linha de alienígenas
             for alien_number in range(number_aliens_x):
                 # Cria um alienígena e o posiciona na linha
-                alien = Alien(self.screen, self.settings)
-                alien.x = alien_width + 2 * alien_width * alien_number
-                alien.rect.x = alien.x
-                alien.y = alien_height + 2 * alien_height * row_number
-                alien.rect.y = alien.y
-                self.aliens.add(alien)
+                self._create_alien(alien_number, row_number, alien_width, alien_height)
+
     def _change_fleet_direction(self) -> None:
         """Desce a frota e muda sua direção."""
         for alien in self.aliens.sprites():
